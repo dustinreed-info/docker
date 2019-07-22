@@ -15,7 +15,7 @@ defaultEntryPoints = ["https","http"]
     address = ":8080"
     [entryPoints.dashboard.auth]
       [entryPoints.dashboard.auth.basic]
-        users = ["YOURUSER:PASSOWRD",]
+        users = ["YOURUSER:PASSWORD",]
   
 [api]
 entrypoint = "dashboard"
