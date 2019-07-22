@@ -1,4 +1,4 @@
-# Docker Stack 
+# Docker Compose Services
 
 Appdaemon
     
