@@ -2,8 +2,8 @@
 
 Appdaemon
     
-    AppDaemon is a loosely coupled, multithreaded, sandboxed python execution environment for writing automation apps 
-    for Home Assistant.
+    AppDaemon is a loosely coupled, multithreaded, sandboxed python execution environment for writing automation
+    apps for Home Assistant.
 
 HomeAssistant
     
