@@ -1,0 +1,192 @@
+version: '2.1'
+services:   
+  appdaemon:
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    container_name:  appdaemon
+    restart: always
+    image: acockburn/appdaemon:latest
+    hostname: appdaemon
+    volumes:
+      - ./apps:/conf/
+      - /etc/localtime:/etc/localtime
+      - /etc/timezone:/etc/timezone
+    ports:
+      - "5050:5050"
+    environment:
+      - HA_URL=${HOMEASSISTANT_URL}
+      - TOKEN=${APPDAEMON_TOKEN}
+      - DASH_URL=${APP_DAEMON_DASSHBOARD}
+    labels:  
+      - "traefik.enable=true"
+      - "traefik.basic.frontend.rule=Host:${APPDAEMON_FRONTEND_RULE}"
+      - "traefik.port=5050"
+      - "traefik.docker.network=web"
+      - "traefik.backend=appdaemon"
+    networks: 
+      - web
+      - private
+  homeassistant:
+    depends_on:
+      appdaemon:
+        condition: service_started
+    container_name: home-assistant
+    restart: always
+    image: homeassistant/home-assistant:dev
+    hostname: homeassistant
+    volumes:
+      - /etc/localtime:/etc/localtime
+      - /etc/timezone:/etc/timezone
+      - ./ha-config:/config
+    ports: 
+      - "8123:8123"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.basic.frontend.rule=Host:${HOMEASSISTANT_FRONTEND_RULE}"
+      - "traefik.port=8123"
+      - "traefik.docker.network=web"
+      - "traefik.backend=homeassistant"
+    networks:
+      - web
+      - private
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+      - /dev/ttyUSB1:/dev/ttyUSB1
+  jenkins:
+    depends_on:
+      traefik:
+        condition: service_started
+    hostname: jenkins
+    container_name: jenkins
+    restart: unless-stopped
+    image: bitnami/jenkins:2
+    ports:
+      - "8081:8080"
+      # - "8443:8443"
+      - "50000:50000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.basic.frontend.rule=Host:${JENKINS_FRONTEND_RULE}"
+      - "traefik.port=8080"
+      - "traefik.docker.network=web"
+      - "traefik.backend=jenkins"
+    volumes:
+      - ./jenkins-config:/bitnami
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime
+      - /etc/timezone:/etc/timezone
+    networks:
+      - web
+      - private
+  mosquitto:
+    depends_on: 
+      mysql:
+        condition: service_started
+    image: eclipse-mosquitto
+    hostname: mosquitto
+    container_name: mosquitto
+    restart: always
+    networks:
+      - private
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/etc/mosquitto/mosquitto.conf
+      - /etc/localtime:/etc/localtime
+      - /etc/timezone:/etc/timezone
+    healthcheck:
+      test: [ "CMD", "ping", "-w", "5", "mosquitto"]
+      interval: 5s
+      timeout: 6s
+      retries: 1
+  mysql:
+    image: mysql:5.7
+    restart: always
+    hostname: mysql
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - 3306:3306
+    networks:
+      - private
+    volumes:
+      - ./mysql:/var/lib/mysql
+      - /etc/localtime:/etc/localtime
+      - /etc/timezone:/etc/timezone
+  portainer:
+    image: portainer/portainer
+    restart: always
+    container_name: "portainer-app"
+    ports:
+      - 9000:9000
+#Automatically choose 'Manage the Docker instance where Portainer is running' by adding <--host=unix:///var/run/docker.sock> to the command
+    command: --templates http://templates/templates.json --host=unix:///var/run/docker.sock
+    volumes:
+      - ./portainer/data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime
+      - /etc/timezone:/etc/timezone
+    networks:
+      - web
+      - private
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.backend=portainer"
+      - "traefik.basic.frontend.rule=Host:${PORTAINER_FRONTEND_RULE}"
+      - "traefik.port=9000"
+  traefik:
+    container_name: traefik
+    image: traefik:alpine
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
+
+    labels:
+      traefik.enable: true
+      traefik.frontend.rule: "Host:${TRAEFIK_FRONTEND_RULE}"
+      traefik.frontend.auth.basic: "${TRAEFIK_FRONTEND_AUTH}"
+      traefik.port: 8080
+    networks:
+      - web
+      - private
+    volumes:
+      - ./traefik_config/traefik.toml:/etc/traefik/traefik.toml
+      - ./traefik_config/:/etc/traefik/
+      - ./traefik_config/acme/:/etc/traefik/acme/
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime
+      - /etc/timezone:/etc/timezone
+    command:
+      - --web
+      - --accessLog.filePath=/etc/traefik/access.log
+      - --accessLog.filters.statusCodes=400-499
+  fail2ban:
+    image: crazymax/fail2ban:latest
+    network_mode: "host"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./fail2ban:/data
+      - ./traefik_config/access.log:/etc/traefik/access.log
+      - ./ha-config/home-assistant.log:/etc/traefik/home-assistant.log
+      - /etc/localtime:/etc/localtime
+      - /etc/timezone:/etc/timezone
+    env_file:
+      - "./fail2ban/fail2ban.env"
+    restart: always
+volumes:
+  db-vol: 
+
+networks:
+  web:
+    external: true
+  private:
+
