@@ -2,7 +2,8 @@
 
 Appdaemon
     
-    AppDaemon is a loosely coupled, multithreaded, sandboxed python execution environment for writing automation apps for Home Assistant.
+    AppDaemon is a loosely coupled, multithreaded, sandboxed python execution environment for writing automation apps 
+    for Home Assistant.
 
 HomeAssistant
     
@@ -14,11 +15,13 @@ Jenkins
 
 Mosquitto
     
-    MQTT is a lightweight publish/subscribe messaging protocol. It is useful for use with low power sensors, but is applicable to many    scenarios.
+    MQTT is a lightweight publish/subscribe messaging protocol. It is useful for use with low power sensors, but is
+    applicable to many scenarios.
 
 MySQL
 
-    MySQL is an Oracle-backed open source relational database management system (RDBMS) based on Structured Query Language (SQL).
+    MySQL is an Oracle-backed open source relational database management system (RDBMS) based on Structured Query 
+    Language (SQL).
     
     
 Portainer
