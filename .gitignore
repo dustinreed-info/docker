@@ -1,0 +1,7 @@
+portainer/*
+ha-config/.shopping_list.json
+ha-config/.storage/auth
+ha-config/secrets.yaml
+ha-config/secrets/*
+.env
+*.env
