@@ -33,7 +33,7 @@ services:
         condition: service_started
     container_name: home-assistant
     restart: always
-    image: homeassistant/home-assistant:dev
+    image: homeassistant/home-assistant:latest
     hostname: homeassistant
     volumes:
       - /etc/localtime:/etc/localtime
